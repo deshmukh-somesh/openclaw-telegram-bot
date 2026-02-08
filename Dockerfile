@@ -1,20 +1,25 @@
 FROM node:20-slim
 
-# Install OpenClaw
-RUN npm install -g openclaw
+# Install OpenClaw globally
+RUN npm install -g openclaw@latest
 
-# Create directories
+# Create necessary directories
 RUN mkdir -p /root/.openclaw/workspace
+RUN mkdir -p /root/.openclaw/cron
 
 # Set working directory
 WORKDIR /app
 
-# Copy your local config (optional)
-# COPY .openclaw/openclaw.json /root/.openclaw/openclaw.json
-# COPY .openclaw/workspace/ /root/.openclaw/workspace/
+# Copy configuration files (we'll add these next)
+COPY config/openclaw.json /root/.openclaw/openclaw.json
+COPY config/jobs.json /root/.openclaw/cron/jobs.json
 
 # Expose gateway port
 EXPOSE 18789
 
-# Start OpenClaw
-CMD ["openclaw", "gateway"]
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+    CMD openclaw gateway status || exit 1
+
+# Start OpenClaw gateway
+CMD ["openclaw", "gateway", "start"]
